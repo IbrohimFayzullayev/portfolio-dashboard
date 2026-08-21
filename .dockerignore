@@ -7,3 +7,10 @@ npm-debug.log*
 Dockerfile
 .dockerignore
 README.md
+
+# tests are not needed in the production image
+vitest.config.ts*
+vitest.setup.ts
+**/*.test.ts
+**/*.test.tsx
+coverage

@@ -14,3 +14,7 @@ yarn-error.log*
 next-env.d.ts
 .vscode/*
 .idea
+
+# vitest scratch
+vitest.config.ts.timestamp-*
+coverage/
