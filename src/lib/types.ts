@@ -79,3 +79,26 @@ export interface ProjectInput {
 }
 
 export type ContentStatus = "all" | "draft" | "published";
+
+/** A submission from the standalone invitation site (the "date planner"). */
+export interface Invitation {
+  id: string;
+  source: string;
+  session_id: string;
+  date: string;
+  time: string;
+  food_id: string;
+  food_label: string;
+  food_emoji: string;
+  place_id: string;
+  place_label: string;
+  place_emoji: string;
+  invite_text: string;
+  user_agent: string;
+  created_at: string;
+}
+
+export interface InvitationList {
+  items: Invitation[];
+  total: number;
+}

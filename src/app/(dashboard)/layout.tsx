@@ -8,6 +8,7 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  Mail,
   Loader2,
   LogOut,
   Moon,
@@ -22,6 +23,7 @@ const nav = [
   { href: "/", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/projects", label: "Projects", icon: FolderKanban, exact: false },
+  { href: "/invitations", label: "Invitations", icon: Mail, exact: false },
 ];
 
 export default function DashboardLayout({

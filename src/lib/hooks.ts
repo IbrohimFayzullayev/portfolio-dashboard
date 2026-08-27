@@ -7,6 +7,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import type {
   ContentStatus,
+  InvitationList,
   Post,
   PostInput,
   Project,
@@ -131,5 +132,28 @@ export function useDeleteProject() {
     mutationFn: (id: string) =>
       apiFetch<void>(`/projects/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+/* ------------------------------ invitations ------------------------------ */
+
+/**
+ * Submissions arrive on their own, so the list polls in the background — new
+ * ones show up without a reload. Replaced by the Telegram bot later.
+ */
+export function useInvitations() {
+  return useQuery({
+    queryKey: ["invitations"],
+    queryFn: ({ signal }) => apiFetch<InvitationList>("/invitations", { signal }),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useDeleteInvitation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/invitations/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["invitations"] }),
   });
 }
