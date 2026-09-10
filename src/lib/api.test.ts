@@ -47,7 +47,7 @@ describe("apiFetch", () => {
     fetchMock.mockResolvedValueOnce(response(200, JSON.stringify({ id: 1 })));
     const data = await apiFetch<{ id: number }>("/posts");
     expect(data).toEqual({ id: 1 });
-    expect(fetchMock.mock.calls[0][0]).toContain("/posts");
+    expect(fetchMock.mock.calls[0]![0]).toContain("/posts");
   });
 
   it("attaches the bearer token when authenticated", async () => {
@@ -55,7 +55,7 @@ describe("apiFetch", () => {
     fetchMock.mockResolvedValueOnce(response(200, "[]"));
     await apiFetch("/posts");
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer my-token");
   });
@@ -65,7 +65,7 @@ describe("apiFetch", () => {
     fetchMock.mockResolvedValueOnce(response(200, "{}"));
     await apiFetch("/public/posts", { auth: false });
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
     const headers = (init.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
   });
@@ -74,7 +74,7 @@ describe("apiFetch", () => {
     fetchMock.mockResolvedValueOnce(response(201, JSON.stringify({ ok: true })));
     await apiFetch("/posts", { method: "POST", body: { title: "Hi" } });
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.method).toBe("POST");
     expect(init.body).toBe(JSON.stringify({ title: "Hi" }));
     expect((init.headers as Record<string, string>)["Content-Type"]).toBe(
@@ -109,8 +109,8 @@ describe("apiFetch", () => {
 
   it("throws ApiError instances (so callers can read .status)", async () => {
     fetchMock.mockResolvedValueOnce(response(500, "", false));
-    const err = await apiFetch("/posts").catch((e) => e);
+    const err: unknown = await apiFetch("/posts").catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ApiError);
-    expect(err.status).toBe(500);
+    expect((err as ApiError).status).toBe(500);
   });
 });

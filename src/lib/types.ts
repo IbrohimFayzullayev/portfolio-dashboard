@@ -25,6 +25,7 @@ export interface Post {
   featured: boolean;
   draft: boolean;
   date: string;
+  translation_key: string;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -41,6 +42,8 @@ export interface PostInput {
   featured: boolean;
   draft: boolean;
   date: string;
+  /** Pairs this row with its other-language version; "" when there is none. */
+  translation_key: string;
 }
 
 export interface Project {
@@ -58,6 +61,7 @@ export interface Project {
   featured: boolean;
   draft: boolean;
   date: string;
+  translation_key: string;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +80,8 @@ export interface ProjectInput {
   featured: boolean;
   draft: boolean;
   date: string;
+  /** Pairs this row with its other-language version; "" when there is none. */
+  translation_key: string;
 }
 
 export type ContentStatus = "all" | "draft" | "published";

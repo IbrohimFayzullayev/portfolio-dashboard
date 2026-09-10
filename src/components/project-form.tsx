@@ -31,6 +31,10 @@ const schema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
     .or(z.literal("")),
+  translation_key: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Lowercase letters, numbers, hyphens")
+    .or(z.literal("")),
   featured: z.boolean(),
   draft: z.boolean(),
 });
@@ -67,6 +71,7 @@ export function ProjectForm({
       repo: initial?.repo ?? "",
       order: initial?.order != null ? String(initial.order) : "0",
       date: initial?.date ?? todayISO(),
+      translation_key: initial?.translation_key ?? "",
       featured: initial?.featured ?? false,
       draft: initial?.draft ?? true,
     },
@@ -85,6 +90,7 @@ export function ProjectForm({
       repo: values.repo,
       order: Number(values.order) || 0,
       date: values.date || todayISO(),
+      translation_key: values.translation_key,
       featured: values.featured,
       draft: values.draft,
     };
@@ -127,6 +133,19 @@ export function ProjectForm({
             <option value="en">English</option>
             <option value="uz">O‘zbekcha</option>
           </Select>
+        </Field>
+
+        <Field
+          label="Translation key"
+          htmlFor="translation_key"
+          error={errors.translation_key?.message}
+          hint="Same key on the English and Uzbek version — that is what pairs them for hreflang. Leave empty if this exists in one language only."
+        >
+          <Input
+            id="translation_key"
+            {...register("translation_key")}
+            placeholder="radius-crm"
+          />
         </Field>
 
         <Field
