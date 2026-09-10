@@ -13,7 +13,27 @@ env:
   IMAGE: ghcr.io/ibrohimfayzullayev/portfolio-dashboard
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +78,35 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             cd /opt/portfolio
+
+            # Domains come from .env; source it FIRST so its TAG=latest cannot
+            # clobber the pinned tag below.
+            set -a; . ./.env; set +a
+
+            # The image tag is pinned to this commit rather than `latest`, so a
+            # rollback is `TAG=<previous sha> docker compose up -d dashboard`.
+            export TAG="${{ github.sha }}"
             docker compose -f docker-compose.prod.yml --env-file .env pull dashboard
             docker compose -f docker-compose.prod.yml --env-file .env up -d dashboard
-            docker image prune -f
+
+            for i in $(seq 1 20); do
+              if curl -fsS -o /dev/null "https://$DASHBOARD_DOMAIN"; then
+                echo "healthy: $DASHBOARD_DOMAIN"
+                echo "$TAG $(date -Is)" >> deployed-dashboard.log
+
+                # Tell the ops bot. `|| true` because a deploy that worked must
+                # not be reported as failed just because the notification did
+                # not land (e.g. before migration 000004 has run).
+                docker compose -f docker-compose.prod.yml exec -T db \
+                  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q -c \
+                  "INSERT INTO notifications (kind, payload) VALUES ('deploy.finished', jsonb_build_object('service', 'dashboard', 'sha', '$TAG'));" \
+                  >/dev/null 2>&1 || true
+
+                docker image prune -f
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "FAILED: $DASHBOARD_DOMAIN did not become healthy within 60s"
+            docker compose -f docker-compose.prod.yml logs --tail 50 dashboard
+            exit 1
