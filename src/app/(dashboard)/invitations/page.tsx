@@ -49,15 +49,17 @@ export default function InvitationsPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-40 items-center justify-center">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground size-5 animate-spin" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <p className="text-sm text-destructive">
-        {error instanceof ApiError ? error.message : "Failed to load submissions"}
+      <p className="text-destructive text-sm">
+        {error instanceof ApiError
+          ? error.message
+          : "Failed to load submissions"}
       </p>
     );
   }
@@ -68,7 +70,7 @@ export default function InvitationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Invitations</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {data?.total
             ? `${data.total} submission${data.total === 1 ? "" : "s"} · refreshes automatically`
             : "Nothing yet"}
@@ -77,20 +79,21 @@ export default function InvitationsPage() {
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-16 text-center">
-          <Mail className="size-8 text-muted-foreground" />
+          <Mail className="text-muted-foreground size-8" />
           <div>
             <p className="font-medium">No submissions yet</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               They appear here the moment someone finishes the invitation site.
             </p>
           </div>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-180 text-sm">
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr className="bg-muted/50 text-muted-foreground border-b text-left text-xs tracking-wide uppercase">
                 <th className="px-4 py-3 font-medium">Received</th>
+                <th className="px-4 py-3 font-medium">Guest</th>
                 <th className="px-4 py-3 font-medium">When</th>
                 <th className="px-4 py-3 font-medium">Menu</th>
                 <th className="px-4 py-3 font-medium">Place</th>
@@ -104,21 +107,40 @@ export default function InvitationsPage() {
                 return (
                   <React.Fragment key={inv.id}>
                     <tr className="border-b last:border-b-0">
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
+                      <td className="text-muted-foreground px-4 py-3 whitespace-nowrap tabular-nums">
                         {formatReceived(inv.created_at)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium tabular-nums">
+                      {/* Blank for submissions from before the site asked. */}
+                      <td className="px-4 py-3 font-medium">
+                        {inv.guest_name || (
+                          <span className="text-muted-foreground font-normal">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium whitespace-nowrap tabular-nums">
                         {inv.date} · {inv.time}
                       </td>
                       <td className="px-4 py-3">
                         {inv.food_emoji} {inv.food_label || "—"}
                       </td>
                       <td className="px-4 py-3">
-                        {inv.place_emoji} {inv.place_label || "—"}
+                        <div>
+                          {inv.place_emoji} {inv.place_label || "—"}
+                        </div>
+                        {inv.venue_name && (
+                          <div className="text-xs text-muted-foreground">
+                            {inv.venue_name}
+                            {inv.venue_custom && " · o'zi yozgan"}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {inv.session_id ? (
-                          <Badge variant="secondary" className="font-mono text-[11px]">
+                          <Badge
+                            variant="secondary"
+                            className="font-mono text-[11px]"
+                          >
                             {inv.session_id.slice(0, 8)}
                           </Badge>
                         ) : (
@@ -130,7 +152,9 @@ export default function InvitationsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={expanded ? "Hide letter" : "Show letter"}
+                            aria-label={
+                              expanded ? "Hide letter" : "Show letter"
+                            }
                             onClick={() => setOpen(expanded ? null : inv.id)}
                           >
                             <ChevronDown
@@ -158,13 +182,13 @@ export default function InvitationsPage() {
                     </tr>
 
                     {expanded && (
-                      <tr className="border-b bg-muted/30 last:border-b-0">
-                        <td colSpan={6} className="px-4 py-4">
-                          <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                      <tr className="bg-muted/30 border-b last:border-b-0">
+                        <td colSpan={7} className="px-4 py-4">
+                          <pre className="overflow-x-auto font-mono text-xs leading-relaxed whitespace-pre-wrap">
                             {inv.invite_text || "(no letter stored)"}
                           </pre>
                           {inv.user_agent && (
-                            <p className="mt-3 truncate text-xs text-muted-foreground">
+                            <p className="text-muted-foreground mt-3 truncate text-xs">
                               {inv.user_agent}
                             </p>
                           )}

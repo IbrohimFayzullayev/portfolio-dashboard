@@ -91,6 +91,8 @@ export interface Invitation {
   id: string;
   source: string;
   session_id: string;
+  /** Empty for invitations submitted before the site asked for a name. */
+  guest_name: string;
   date: string;
   time: string;
   food_id: string;
@@ -99,6 +101,10 @@ export interface Invitation {
   place_id: string;
   place_label: string;
   place_emoji: string;
+  /** The exact venue; venue_custom is true when the visitor typed it. */
+  venue_id: string;
+  venue_name: string;
+  venue_custom: boolean;
   invite_text: string;
   user_agent: string;
   created_at: string;
