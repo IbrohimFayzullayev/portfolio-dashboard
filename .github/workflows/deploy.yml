@@ -87,7 +87,11 @@ jobs:
             # rollback is `TAG=<previous sha> docker compose up -d dashboard`.
             export TAG="${{ github.sha }}"
             docker compose -f docker-compose.prod.yml --env-file .env pull dashboard
-            docker compose -f docker-compose.prod.yml --env-file .env up -d dashboard
+            # --no-deps, because TAG is exported for the whole compose file
+            # and this service depends_on api: without it, compose tries to
+            # bring up the API at THIS repo's commit sha, an image that does
+            # not exist, and then leaves dashboard running the old one.
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps dashboard
 
             # A 200 from the site proves SOMETHING is answering, not that it is
             # the new build — the previous container answers 200 just as well.
