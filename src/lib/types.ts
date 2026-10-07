@@ -114,3 +114,71 @@ export interface InvitationList {
   items: Invitation[];
   total: number;
 }
+
+/* ---------------------------- contact messages --------------------------- */
+
+/** One message sent through the public site's contact form. */
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  /** Language the visitor was reading in: "en", "uz" or "". */
+  locale: string;
+  user_agent: string;
+  /** null until opened here. */
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface ContactMessageList {
+  items: ContactMessage[];
+  total: number;
+  unread: number;
+}
+
+/* --------------------------------- system -------------------------------- */
+
+export interface SystemErrorGroup {
+  fingerprint: string;
+  /** "api", "web" or "dashboard". */
+  service: string;
+  route: string;
+  /** 0 info, 1 warning, 2 critical. */
+  severity: number;
+  message: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  muted_until: string | null;
+}
+
+export interface SystemHealthTarget {
+  target: string;
+  ok: boolean;
+  latency_ms: number;
+  detail: string;
+  checked_at: string;
+  checks_7d: number;
+  /** Percentage, 0–100. */
+  uptime_7d: number;
+  last_failure: string | null;
+}
+
+export interface SystemDeploy {
+  service: string;
+  sha: string;
+  at: string;
+}
+
+export interface SystemOverview {
+  generated_at: string;
+  errors: SystemErrorGroup[];
+  health: SystemHealthTarget[];
+  deploys: SystemDeploy[];
+  outbox: { pending: number; parked: number; last_sent_at: string | null };
+  /** null until the bot has ever written a heartbeat. */
+  bot: { beat_at: string; note: string } | null;
+  /** null until a backup has ever finished. */
+  backup: { at: string; size: string; file: string } | null;
+}
