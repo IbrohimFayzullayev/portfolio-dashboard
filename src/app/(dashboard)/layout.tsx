@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
+  Activity,
   FileText,
   FolderKanban,
+  Inbox,
   LayoutDashboard,
   Mail,
   Loader2,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
+import { useContactMessages } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,8 @@ const nav = [
   { href: "/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/projects", label: "Projects", icon: FolderKanban, exact: false },
   { href: "/invitations", label: "Invitations", icon: Mail, exact: false },
+  { href: "/messages", label: "Messages", icon: Inbox, exact: false },
+  { href: "/system", label: "System", icon: Activity, exact: false },
 ];
 
 export default function DashboardLayout({
@@ -34,6 +39,11 @@ export default function DashboardLayout({
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  // Fetched here rather than on the page so the count is visible from
+  // anywhere in the dashboard; React Query shares the result with the page.
+  // Held back until there is a session — asking earlier is a guaranteed 401.
+  const unread =
+    useContactMessages({ enabled: Boolean(user) }).data?.unread ?? 0;
 
   React.useEffect(() => {
     if (!isLoading && !user) router.replace("/login");
@@ -73,6 +83,14 @@ export default function DashboardLayout({
               >
                 <Icon className="size-4" />
                 {item.label}
+                {item.href === "/messages" && unread > 0 && (
+                  <span
+                    className="bg-foreground text-background ml-auto rounded-full px-1.5 py-0.5 text-[11px] leading-none font-semibold tabular-nums"
+                    aria-label={`${unread} unread`}
+                  >
+                    {unread}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -81,13 +99,15 @@ export default function DashboardLayout({
 
       <div className="flex min-w-0 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
-          <nav className="flex items-center gap-1 md:hidden">
+          {/* Six links do not fit a phone; they scroll sideways instead of
+              pushing the sign-out button off the screen. */}
+          <nav className="-mx-2 flex min-w-0 items-center gap-1 overflow-x-auto px-2 md:hidden">
             {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-md px-2.5 py-1.5 text-sm",
+                  "shrink-0 rounded-md px-2.5 py-1.5 text-sm",
                   isActive(item.href, item.exact)
                     ? "bg-secondary"
                     : "text-muted-foreground",
@@ -97,7 +117,7 @@ export default function DashboardLayout({
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
             <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-none">{user.name || "Admin"}</p>
@@ -107,8 +127,8 @@ export default function DashboardLayout({
               variant="ghost"
               size="icon"
               aria-label="Sign out"
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 router.replace("/login");
               }}
             >

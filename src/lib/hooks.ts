@@ -6,12 +6,14 @@ import {
 
 import { apiFetch } from "@/lib/api";
 import type {
+  ContactMessageList,
   ContentStatus,
   InvitationList,
   Post,
   PostInput,
   Project,
   ProjectInput,
+  SystemOverview,
 } from "@/lib/types";
 
 interface ListParams {
@@ -155,5 +157,50 @@ export function useDeleteInvitation() {
     mutationFn: (id: string) =>
       apiFetch<void>(`/invitations/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["invitations"] }),
+  });
+}
+
+/* ---------------------------- contact messages --------------------------- */
+
+/** Polls like invitations do: a message can arrive while the tab is open. */
+export function useContactMessages({ enabled = true } = {}) {
+  return useQuery({
+    queryKey: ["messages"],
+    queryFn: ({ signal }) =>
+      apiFetch<ContactMessageList>("/messages", { signal }),
+    refetchInterval: 60_000,
+    enabled,
+  });
+}
+
+export function useMarkContactMessageRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/messages/${id}/read`, { method: "PATCH" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["messages"] }),
+  });
+}
+
+export function useDeleteContactMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/messages/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["messages"] }),
+  });
+}
+
+/* --------------------------------- system -------------------------------- */
+
+/**
+ * The bot checks health every two minutes, so refreshing more often than once
+ * a minute would only redraw the same numbers.
+ */
+export function useSystemOverview() {
+  return useQuery({
+    queryKey: ["system"],
+    queryFn: ({ signal }) => apiFetch<SystemOverview>("/system", { signal }),
+    refetchInterval: 60_000,
   });
 }

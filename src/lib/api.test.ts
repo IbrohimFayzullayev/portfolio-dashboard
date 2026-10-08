@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { apiFetch, ApiError, tokenStore } from "@/lib/api";
+import { apiFetch, ApiError, onUnauthorized } from "@/lib/api";
 
 /**
  * apiFetch is the single choke point for every dashboard request. These tests
- * mock fetch to verify: auth header injection, JSON body serialization, the
- * 204 no-content shortcut, error mapping, and the important security behaviour
- * of clearing the token on a 401.
+ * mock fetch to verify: that the session cookie is sent and no token is ever
+ * handled in JavaScript, JSON body serialization, the 204 no-content shortcut,
+ * error mapping, and what a 401 means in each of the two places it can occur.
  */
 
 function response(
@@ -25,21 +25,10 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
-  tokenStore.clear();
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  tokenStore.clear();
-});
-
-describe("tokenStore", () => {
-  it("round-trips a token through the cookie", () => {
-    tokenStore.set("abc123");
-    expect(tokenStore.get()).toBe("abc123");
-    tokenStore.clear();
-    expect(tokenStore.get()).toBeUndefined();
-  });
 });
 
 describe("apiFetch", () => {
@@ -50,24 +39,23 @@ describe("apiFetch", () => {
     expect(fetchMock.mock.calls[0]![0]).toContain("/posts");
   });
 
-  it("attaches the bearer token when authenticated", async () => {
-    tokenStore.set("my-token");
+  it("sends the session cookie and never an Authorization header", async () => {
     fetchMock.mockResolvedValueOnce(response(200, "[]"));
     await apiFetch("/posts");
 
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
-    expect(headers.Authorization).toBe("Bearer my-token");
-  });
-
-  it("omits the auth header when auth is disabled", async () => {
-    tokenStore.set("my-token");
-    fetchMock.mockResolvedValueOnce(response(200, "{}"));
-    await apiFetch("/public/posts", { auth: false });
-
-    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    // The cookie is HttpOnly: the browser attaches it, and only when asked.
+    expect(init.credentials).toBe("include");
     const headers = (init.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
+  });
+
+  it("asks for credentials on login too, or the cookie would be discarded", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, "{}"));
+    await apiFetch("/auth/login", { method: "POST", body: {}, auth: false });
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.credentials).toBe("include");
   });
 
   it("serializes a body and sets Content-Type", async () => {
@@ -87,15 +75,34 @@ describe("apiFetch", () => {
     expect(await apiFetch("/posts/1", { method: "DELETE" })).toBeUndefined();
   });
 
-  it("clears the token and throws on 401", async () => {
-    tokenStore.set("expired");
-    fetchMock.mockResolvedValueOnce(response(401, "", false));
+  it("announces an expired session on a 401", async () => {
+    const listener = vi.fn();
+    const unsubscribe = onUnauthorized(listener);
+    fetchMock.mockResolvedValue(response(401, "", false));
 
-    await expect(apiFetch("/auth/me")).rejects.toMatchObject({
+    await expect(apiFetch("/posts")).rejects.toMatchObject({
       name: "ApiError",
       status: 401,
     });
-    expect(tokenStore.get()).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    await apiFetch("/posts").catch(() => {});
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a wrong password as what the server said, not as an expiry", async () => {
+    const listener = vi.fn();
+    const unsubscribe = onUnauthorized(listener);
+    fetchMock.mockResolvedValueOnce(
+      response(401, JSON.stringify({ error: "invalid email or password" }), false),
+    );
+
+    await expect(
+      apiFetch("/auth/login", { method: "POST", body: {}, auth: false }),
+    ).rejects.toThrow("invalid email or password");
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 
   it("maps a server error message into ApiError", async () => {
@@ -104,6 +111,13 @@ describe("apiFetch", () => {
     );
     await expect(apiFetch("/posts", { method: "POST", body: {} })).rejects.toThrow(
       "slug already exists",
+    );
+  });
+
+  it("survives a non-JSON error body", async () => {
+    fetchMock.mockResolvedValueOnce(response(502, "<html>Bad Gateway</html>", false));
+    await expect(apiFetch("/posts")).rejects.toThrow(
+      "Request failed with status 502",
     );
   });
 
