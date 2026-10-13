@@ -46,7 +46,7 @@ export function niceCeil(v: number): number {
   return 10 * exp;
 }
 
-function useWidth<T extends HTMLElement>(): [
+export function useWidth<T extends HTMLElement>(): [
   React.RefObject<T | null>,
   number,
 ] {

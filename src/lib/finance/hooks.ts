@@ -8,6 +8,8 @@ import {
 import { apiFetch } from "@/lib/api";
 import { useFinanceSource } from "./source";
 import type {
+  FinanceCheckpoint,
+  FinanceCheckpointInput,
   FinanceDebts,
   FinanceEntry,
   FinanceEntryFilter,
@@ -89,6 +91,19 @@ export function useFinanceDebts(person = "") {
   });
 }
 
+export function useFinanceCheckpoints(enabled = true) {
+  const src = useFinanceSource();
+  return useQuery({
+    queryKey: ["finance", src.id, "checkpoints"],
+    queryFn: ({ signal }) =>
+      src.get<{ checkpoints: FinanceCheckpoint[] }>(
+        "/finance/checkpoints",
+        signal,
+      ),
+    enabled,
+  });
+}
+
 /* --------------------------- dashboard-only writes -------------------------- */
 
 function useInvalidateFinance() {
@@ -125,6 +140,27 @@ export function useDeleteFinanceEntry() {
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<void>(`/finance/entries/${id}`, { method: "DELETE" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCreateFinanceCheckpoint() {
+  const invalidate = useInvalidateFinance();
+  return useMutation({
+    mutationFn: (input: FinanceCheckpointInput) =>
+      apiFetch<FinanceCheckpoint>("/finance/checkpoints", {
+        method: "POST",
+        body: input,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteFinanceCheckpoint() {
+  const invalidate = useInvalidateFinance();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/finance/checkpoints/${id}`, { method: "DELETE" }),
     onSuccess: invalidate,
   });
 }

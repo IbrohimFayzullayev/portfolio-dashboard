@@ -8,8 +8,10 @@ import {
   formatAmounts,
   formatDay,
   formatMoney,
+  formatSignedAmounts,
   percentChange,
   daysBetween,
+  savingsRate,
 } from "@/lib/finance/format";
 import type {
   Amounts,
@@ -62,7 +64,7 @@ function Tile({
   return (
     <div className={cn("bg-card rounded-xl border p-4 shadow-sm", className)}>
       <p className="text-muted-foreground text-xs font-medium">{label}</p>
-      <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">
+      <p className="mt-1 text-lg font-semibold tracking-tight break-words tabular-nums sm:text-2xl">
         {value}
       </p>
       {hint && <div className="text-muted-foreground mt-1 text-xs">{hint}</div>}
@@ -119,9 +121,17 @@ export function StatTiles({
   }
   const expenses = summary.by_kind.expense?.count ?? 0;
   const gifts = summary.by_kind.gift?.count ?? 0;
+  const incomes = summary.by_kind.income?.count ?? 0;
+  const rate = savingsRate(summary.income, summary.net);
+  const hasIncome = Object.values(summary.income).some(Boolean);
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Tile
+        label="Kirim"
+        value={formatAmounts(summary.income)}
+        hint={hasIncome ? `${incomes} marta` : "Botda: +10mln oylik"}
+      />
       <Tile
         label="Sarflandi"
         value={formatAmounts(summary.spent)}
@@ -136,37 +146,18 @@ export function StatTiles({
             `${expenses + gifts} ta yozuv`
           )
         }
-        className="col-span-2 lg:col-span-1"
       />
       <Tile
-        label="Kuniga o'rtacha"
+        label="Qoldi (kirim - sarf)"
+        value={hasIncome ? formatSignedAmounts(summary.net) : "-"}
+        hint={
+          rate === null ? "Kirim yozilmagan" : `Kirimning ${rate}% i saqlandi`
+        }
+      />
+      <Tile
+        label="Kuniga o'rtacha sarf"
         value={formatAmounts(avg)}
         hint={`${summary.days} kun · ${expenses + gifts} ta yozuv`}
-      />
-      <Tile
-        label="Berildi (qaytmaydi)"
-        value={formatAmounts(summary.by_kind.gift?.amounts)}
-        hint={`${gifts} marta`}
-      />
-      <Tile
-        label="Qarzlar"
-        value={
-          <span className="flex flex-col text-base sm:text-lg">
-            <span>
-              <span className="text-muted-foreground text-xs font-normal">
-                sizga{" "}
-              </span>
-              {formatAmounts(summary.debts.owed_to_me)}
-            </span>
-            <span>
-              <span className="text-muted-foreground text-xs font-normal">
-                siz{" "}
-              </span>
-              {formatAmounts(summary.debts.i_owe)}
-            </span>
-          </span>
-        }
-        className="col-span-2 lg:col-span-1"
       />
     </div>
   );

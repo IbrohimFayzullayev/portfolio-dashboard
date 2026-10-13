@@ -11,6 +11,9 @@ import {
   amountInputValue,
   percentChange,
   periodFor,
+  savingsRate,
+  signedMoney,
+  formatSignedAmounts,
 } from "@/lib/finance/format";
 
 const sp = (s: string) => s.replace(/ /g, " ");
@@ -39,6 +42,7 @@ describe("formatAmounts", () => {
       "1 000 000 so'm + $300",
     );
     expect(sp(formatAmounts({}))).toBe("0 so'm");
+    expect(sp(formatAmounts({ UZS: 100_000_000, USD: -30_000 }))).toBe("1 000 000 so'm - $300");
     expect(sp(formatAmounts(undefined))).toBe("0 so'm");
   });
 });
@@ -123,5 +127,19 @@ describe("percentChange", () => {
     expect(percentChange(120, 100)).toBe(20);
     expect(percentChange(80, 100)).toBe(-20);
     expect(percentChange(5, 0)).toBeNull();
+  });
+});
+
+describe("income helpers", () => {
+  it("signs changes", () => {
+    expect(sp(signedMoney(737_000_000))).toBe("+7 370 000 so'm");
+    expect(sp(signedMoney(-50_000_000))).toBe("-500 000 so'm");
+    expect(sp(formatSignedAmounts({ UZS: 100_00, USD: -20_00 }))).toBe(
+      "+100 so'm · -$20",
+    );
+  });
+  it("savings rate needs income", () => {
+    expect(savingsRate({ UZS: 1_000 }, { UZS: 737 })).toBe(74);
+    expect(savingsRate({}, { UZS: -5 })).toBeNull();
   });
 });

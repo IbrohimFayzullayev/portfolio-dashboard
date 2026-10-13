@@ -27,14 +27,38 @@ export function formatMoney(minor: number, currency: Currency = "UZS"): string {
   return negative ? "-" + s : s;
 }
 
-/** "1 250 000 so'm + $300"; "0 so'm" when empty. */
+/** "1 250 000 so'm + $300", "33 425 000 so'm - $300"; "0 so'm" when empty. */
 export function formatAmounts(a: Amounts | undefined | null): string {
+  let out = "";
+  for (const cur of ["UZS", "USD"] as const) {
+    const v = a?.[cur];
+    if (!v) continue;
+    if (!out) out = formatMoney(v, cur);
+    else out += (v < 0 ? " - " : " + ") + formatMoney(Math.abs(v), cur);
+  }
+  return out || "0" + NBSP + "so'm";
+}
+
+/** "+7 370 000 so'm", "-500 000 so'm": for amounts that are a change. */
+export function signedMoney(minor: number, currency: Currency = "UZS"): string {
+  return (minor > 0 ? "+" : "") + formatMoney(minor, currency);
+}
+
+/** Per-currency signed amounts joined: "+7 370 000 so'm · -$20". */
+export function formatSignedAmounts(a: Amounts | undefined | null): string {
   const parts: string[] = [];
   for (const cur of ["UZS", "USD"] as const) {
     const v = a?.[cur];
-    if (v) parts.push(formatMoney(v, cur));
+    if (v) parts.push(signedMoney(v, cur));
   }
-  return parts.length ? parts.join(" + ") : "0" + NBSP + "so'm";
+  return parts.length ? parts.join(" · ") : "0\u00a0so'm";
+}
+
+/** Share of income kept, in so'm; null without income. */
+export function savingsRate(income: Amounts, net: Amounts): number | null {
+  const inc = income.UZS ?? 0;
+  if (inc <= 0) return null;
+  return Math.round(((net.UZS ?? 0) / inc) * 100);
 }
 
 /** Axis labels: "350k", "1.2 mln", "12 mln". Takes minor units of so'm. */

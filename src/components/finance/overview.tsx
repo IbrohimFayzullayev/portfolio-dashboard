@@ -22,6 +22,8 @@ import {
 } from "@/lib/finance/format";
 import type { FinanceSummary } from "@/lib/finance/types";
 import { BarChart, type Bar } from "./bar-chart";
+import { FlowChart, LineChart } from "./charts";
+import { BalanceCard } from "./balance";
 import {
   CategoryBars,
   DebtsList,
@@ -69,7 +71,13 @@ export function FinanceOverview({
   );
 
   const categories = React.useMemo(
-    () => new Map((meta.data?.categories ?? []).map((c) => [c.key, c])),
+    () =>
+      new Map(
+        [
+          ...(meta.data?.categories ?? []),
+          ...(meta.data?.income_categories ?? []),
+        ].map((c) => [c.key, c]),
+      ),
     [meta.data],
   );
 
@@ -98,6 +106,7 @@ export function FinanceOverview({
   }
 
   const s = summary.data;
+  const dayBars = dailyBars(s, today);
 
   return (
     <div className="space-y-4">
@@ -171,11 +180,30 @@ export function FinanceOverview({
 
       <h2 className="text-muted-foreground text-sm">{period.label}</h2>
 
+      <BalanceCard balance={s.balance} />
+
       <StatTiles summary={s} compareLabel={period.compareLabel} />
+
+      {s.balance_series.some((p) => p.amount_minor !== null) && (
+        <Section title="Balans qanday o'zgardi">
+          <LineChart
+            points={s.balance_series.map((p, i) => ({
+              key: p.date,
+              value: p.amount_minor,
+              label: formatDay(p.date, Number(today.slice(0, 4))),
+              tick: dayBars[i]?.tick ?? "",
+            }))}
+            formatValue={(v) => formatMoney(v)}
+            formatAxis={compactSom}
+            idleText="Har kun oxiridagi qoldiq (so'm)"
+            ariaLabel={`Balans, ${period.label}`}
+          />
+        </Section>
+      )}
 
       <Section title="Kunlik sarf">
         <BarChart
-          bars={dailyBars(s, today)}
+          bars={dayBars}
           formatValue={(v) => formatMoney(v)}
           formatAxis={compactSom}
           idleText={peakText(s)}
@@ -219,19 +247,18 @@ export function FinanceOverview({
         </div>
       </div>
 
-      <Section title="Oxirgi 12 oy">
-        <BarChart
+      <Section title="Oxirgi 12 oy: kirim va sarf">
+        <FlowChart
           bars={s.by_month.map((m) => ({
             key: m.month,
-            value: m.amounts.UZS ?? 0,
+            income: m.income.UZS ?? 0,
+            spent: m.amounts.UZS ?? 0,
             label: formatMonth(m.month),
             tick: formatMonthShort(m.month),
           }))}
           formatValue={(v) => formatMoney(v)}
           formatAxis={compactSom}
-          idleText="Har oy qancha sarflangani"
-          height={150}
-          ariaLabel="Oylik sarf, oxirgi 12 oy"
+          ariaLabel="Oylik kirim va sarf, oxirgi 12 oy"
         />
       </Section>
 
@@ -242,6 +269,7 @@ export function FinanceOverview({
             to={period.to}
             kinds={meta.data.kinds}
             categories={meta.data.categories}
+            incomeCategories={meta.data.income_categories}
             filter={filter}
             onFilterChange={setFilter}
             today={today}

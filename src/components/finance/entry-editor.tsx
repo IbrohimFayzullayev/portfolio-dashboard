@@ -31,12 +31,14 @@ export function EntryEditor({
   entry,
   kinds,
   categories,
+  incomeCategories,
   today,
   onClose,
 }: {
   entry: FinanceEntry | null;
   kinds: FinanceKind[];
   categories: FinanceCategory[];
+  incomeCategories: FinanceCategory[];
   today: string;
   onClose: () => void;
 }) {
@@ -62,7 +64,20 @@ export function EntryEditor({
   const [problem, setProblem] = React.useState("");
 
   const isDebt = kinds.find((k) => k.key === kind)?.debt ?? false;
-  const choosable = categories.filter((c) => c.key !== "qarz");
+  const isIncome = kind === "income";
+  const choosable = React.useMemo(
+    () =>
+      isIncome ? incomeCategories : categories.filter((c) => c.key !== "qarz"),
+    [isIncome, incomeCategories, categories],
+  );
+
+  // Switching kind can leave a category that no longer fits (a lunch filed
+  // under "Oylik"); move to the list's last entry, its "other".
+  React.useEffect(() => {
+    if (!isDebt && !choosable.some((c) => c.key === category)) {
+      setCategory(choosable[choosable.length - 1]?.key ?? "boshqa");
+    }
+  }, [isDebt, choosable, category]);
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -191,7 +206,10 @@ export function EntryEditor({
         )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="fe-person">Kim{isDebt ? "" : " (ixtiyoriy)"}</Label>
+          <Label htmlFor="fe-person">
+            {isIncome ? "Kimdan" : "Kim"}
+            {isDebt ? "" : " (ixtiyoriy)"}
+          </Label>
           <Input
             id="fe-person"
             value={person}

@@ -45,6 +45,7 @@ export function EntriesList({
   to,
   kinds,
   categories,
+  incomeCategories,
   filter,
   onFilterChange,
   today,
@@ -53,6 +54,7 @@ export function EntriesList({
   to: string;
   kinds: FinanceKind[];
   categories: FinanceCategory[];
+  incomeCategories: FinanceCategory[];
   filter: EntriesFilterState;
   onFilterChange: (f: EntriesFilterState) => void;
   today: string;
@@ -92,8 +94,8 @@ export function EntriesList({
     [kinds],
   );
   const catMap = React.useMemo(
-    () => new Map(categories.map((c) => [c.key, c])),
-    [categories],
+    () => new Map([...categories, ...incomeCategories].map((c) => [c.key, c])),
+    [categories, incomeCategories],
   );
   const thisYear = Number(today.slice(0, 4));
 
@@ -150,11 +152,20 @@ export function EntriesList({
             aria-label="Kategoriya"
           >
             <option value="">Hamma kategoriyalar</option>
-            {categories.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.emoji} {c.label}
-              </option>
-            ))}
+            <optgroup label="Sarf">
+              {categories.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.emoji} {c.label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Kirim">
+              {incomeCategories.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.emoji} {c.label}
+                </option>
+              ))}
+            </optgroup>
           </Select>
         </div>
         {canEdit && (
@@ -256,6 +267,7 @@ export function EntriesList({
                       e.raw_text ? `Botga yozilgan: ${e.raw_text}` : undefined
                     }
                   >
+                    {k?.cash === 1 ? "+" : ""}
                     {formatMoney(e.amount_minor, e.currency)}
                   </span>
                   {canEdit && (
@@ -303,6 +315,7 @@ export function EntriesList({
           entry={editing === "new" ? null : editing}
           kinds={kinds}
           categories={categories}
+          incomeCategories={incomeCategories}
           today={today}
           onClose={() => setEditing(null)}
         />
