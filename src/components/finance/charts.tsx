@@ -201,7 +201,14 @@ export function LineChart({
                   key={p.key}
                   x={x(i)}
                   y={height - 6}
-                  textAnchor="middle"
+                  // First and last ticks lean inwards so they are not cut off.
+                  textAnchor={
+                    i === 0
+                      ? "start"
+                      : i === points.length - 1
+                        ? "end"
+                        : "middle"
+                  }
                   className="fill-muted-foreground text-[10px]"
                 >
                   {p.tick}

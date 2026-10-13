@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Activity,
+  BookOpen,
   FileText,
   FolderKanban,
   Inbox,
@@ -15,6 +16,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 
@@ -28,6 +30,8 @@ const nav = [
   { href: "/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/projects", label: "Projects", icon: FolderKanban, exact: false },
   { href: "/finance", label: "Finance", icon: Wallet, exact: false },
+  { href: "/growth", label: "Growth", icon: TrendingUp, exact: false },
+  { href: "/notes", label: "Notes", icon: BookOpen, exact: false },
   { href: "/invitations", label: "Invitations", icon: Mail, exact: false },
   { href: "/messages", label: "Messages", icon: Inbox, exact: false },
   { href: "/system", label: "System", icon: Activity, exact: false },
@@ -101,7 +105,7 @@ export default function DashboardLayout({
 
       <div className="flex min-w-0 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
-          {/* Seven links do not fit a phone; they scroll sideways instead of
+          {/* Nine links do not fit a phone; they scroll sideways instead of
               pushing the sign-out button off the screen. */}
           <nav className="-mx-2 flex min-w-0 items-center gap-1 overflow-x-auto px-2 md:hidden">
             {nav.map((item) => (

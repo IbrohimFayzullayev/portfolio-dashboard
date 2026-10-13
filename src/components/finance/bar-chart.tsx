@@ -196,9 +196,15 @@ export function BarChart({
                   )}
                   {b.tick && (
                     <text
-                      x={GUTTER_LEFT + i * slot + slot / 2}
+                      // The last tick is right-aligned so "13.10" is not cut
+                      // off at the edge of the plot.
+                      x={
+                        i === bars.length - 1
+                          ? width
+                          : GUTTER_LEFT + i * slot + slot / 2
+                      }
                       y={height - 6}
-                      textAnchor="middle"
+                      textAnchor={i === bars.length - 1 ? "end" : "middle"}
                       className="fill-muted-foreground text-[10px]"
                     >
                       {b.tick}
