@@ -15,6 +15,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Wallet,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
@@ -26,6 +27,7 @@ const nav = [
   { href: "/", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/projects", label: "Projects", icon: FolderKanban, exact: false },
+  { href: "/finance", label: "Finance", icon: Wallet, exact: false },
   { href: "/invitations", label: "Invitations", icon: Mail, exact: false },
   { href: "/messages", label: "Messages", icon: Inbox, exact: false },
   { href: "/system", label: "System", icon: Activity, exact: false },
@@ -99,7 +101,7 @@ export default function DashboardLayout({
 
       <div className="flex min-w-0 flex-col">
         <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
-          {/* Six links do not fit a phone; they scroll sideways instead of
+          {/* Seven links do not fit a phone; they scroll sideways instead of
               pushing the sign-out button off the screen. */}
           <nav className="-mx-2 flex min-w-0 items-center gap-1 overflow-x-auto px-2 md:hidden">
             {nav.map((item) => (
