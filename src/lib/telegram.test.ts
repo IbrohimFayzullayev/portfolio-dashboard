@@ -43,3 +43,19 @@ describe("signInWithInitData", () => {
     expect((err as ApiError).status).toBe(403);
   });
 });
+
+describe("signInWithInitData for the finance bot", () => {
+  it("signs in against the finance bot's own API, not the portfolio's", async () => {
+    fetchMock.mockResolvedValueOnce(
+      reply(200, {
+        token: "f",
+        expires_at: "2026-10-29T12:00:00Z",
+        user: { id: 7, first_name: "D" },
+      }),
+    );
+    await signInWithInitData("x", "/api", "/auth");
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("/api/auth");
+    expect(init.credentials).toBe("omit");
+  });
+});

@@ -64,7 +64,10 @@ function Tile({
   return (
     <div className={cn("bg-card rounded-xl border p-4 shadow-sm", className)}>
       <p className="text-muted-foreground text-xs font-medium">{label}</p>
-      <p className="mt-1 text-lg font-semibold tracking-tight break-words tabular-nums sm:text-2xl">
+      {/* A step smaller on phones: "11 000 000 so'm" is one unbreakable word
+          and at text-lg it no longer fits half of a 390px screen, so it
+          broke inside "so'm". */}
+      <p className="mt-1 text-base font-semibold tracking-tight break-words tabular-nums min-[400px]:text-lg sm:text-2xl">
         {value}
       </p>
       {hint && <div className="text-muted-foreground mt-1 text-xs">{hint}</div>}

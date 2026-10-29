@@ -17,6 +17,7 @@ import {
   Moon,
   Sun,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ const nav = [
   { href: "/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/projects", label: "Projects", icon: FolderKanban, exact: false },
   { href: "/finance", label: "Finance", icon: Wallet, exact: false },
+  { href: "/finbot", label: "Moliya boti", icon: Users, exact: false },
   { href: "/growth", label: "Growth", icon: TrendingUp, exact: false },
   { href: "/notes", label: "Notes", icon: BookOpen, exact: false },
   { href: "/invitations", label: "Invitations", icon: Mail, exact: false },
@@ -58,7 +60,7 @@ export default function DashboardLayout({
   if (isLoading || !user) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -68,7 +70,7 @@ export default function DashboardLayout({
 
   return (
     <div className="grid min-h-dvh md:grid-cols-[260px_1fr]">
-      <aside className="hidden flex-col border-r bg-card md:flex">
+      <aside className="bg-card hidden flex-col border-r md:flex">
         <div className="flex h-16 items-center gap-2 border-b px-6 font-semibold tracking-tight">
           <LayoutDashboard className="size-5" />
           Dashboard
@@ -104,7 +106,7 @@ export default function DashboardLayout({
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-6 backdrop-blur">
+        <header className="bg-background/80 flex h-16 items-center justify-between gap-4 border-b px-6 backdrop-blur">
           {/* Nine links do not fit a phone; they scroll sideways instead of
               pushing the sign-out button off the screen. */}
           <nav className="-mx-2 flex min-w-0 items-center gap-1 overflow-x-auto px-2 md:hidden">
@@ -126,8 +128,10 @@ export default function DashboardLayout({
           <div className="ml-auto flex shrink-0 items-center gap-3">
             <ThemeToggle />
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium leading-none">{user.name || "Admin"}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-sm leading-none font-medium">
+                {user.name || "Admin"}
+              </p>
+              <p className="text-muted-foreground text-xs">{user.email}</p>
             </div>
             <Button
               variant="ghost"

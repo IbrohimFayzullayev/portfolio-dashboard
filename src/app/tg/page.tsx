@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { parseTab, type Tab } from "@/lib/growth/format";
 import {
   FinanceSourceProvider,
+  readOnlySend,
   type FinanceSource,
 } from "@/lib/finance/source";
 import { useTelegramSession } from "@/lib/telegram";
@@ -49,7 +50,12 @@ export default function TelegramPage() {
   }, []);
 
   const source = React.useMemo<FinanceSource>(
-    () => ({ id: "tg", get: session.get, canEdit: false }),
+    () => ({
+      id: "tg",
+      get: session.get,
+      send: readOnlySend,
+      canEdit: false,
+    }),
     [session.get],
   );
 

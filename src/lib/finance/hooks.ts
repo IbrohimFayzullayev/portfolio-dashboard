@@ -5,7 +5,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { apiFetch } from "@/lib/api";
 import { useFinanceSource } from "./source";
 import type {
   FinanceCheckpoint,
@@ -19,9 +18,9 @@ import type {
   FinanceSummary,
 } from "./types";
 
-/* Reads go through the page's FinanceSource; writes are dashboard-only and
- * use the admin session directly. Query keys start with ["finance", source]
- * so the two credentials never share a cache entry. */
+/* Reads and writes both go through the page's FinanceSource, so each page
+ * talks to its own backend with its own credential. Query keys start with
+ * ["finance", source] so two credentials never share a cache entry. */
 
 export function useFinanceMeta() {
   const src = useFinanceSource();
@@ -104,7 +103,8 @@ export function useFinanceCheckpoints(enabled = true) {
   });
 }
 
-/* --------------------------- dashboard-only writes -------------------------- */
+/* ---------------------------------- writes ---------------------------------- */
+/* Only shown where the source says canEdit; a read-only source refuses. */
 
 function useInvalidateFinance() {
   const qc = useQueryClient();
@@ -112,10 +112,11 @@ function useInvalidateFinance() {
 }
 
 export function useCreateFinanceEntry() {
+  const src = useFinanceSource();
   const invalidate = useInvalidateFinance();
   return useMutation({
     mutationFn: (input: FinanceEntryInput) =>
-      apiFetch<FinanceEntry>("/finance/entries", {
+      src.send<FinanceEntry>("/finance/entries", {
         method: "POST",
         body: input,
       }),
@@ -124,10 +125,11 @@ export function useCreateFinanceEntry() {
 }
 
 export function useUpdateFinanceEntry() {
+  const src = useFinanceSource();
   const invalidate = useInvalidateFinance();
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: FinanceEntryInput }) =>
-      apiFetch<FinanceEntry>(`/finance/entries/${id}`, {
+      src.send<FinanceEntry>(`/finance/entries/${id}`, {
         method: "PUT",
         body: input,
       }),
@@ -136,19 +138,21 @@ export function useUpdateFinanceEntry() {
 }
 
 export function useDeleteFinanceEntry() {
+  const src = useFinanceSource();
   const invalidate = useInvalidateFinance();
   return useMutation({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/finance/entries/${id}`, { method: "DELETE" }),
+      src.send<void>(`/finance/entries/${id}`, { method: "DELETE" }),
     onSuccess: invalidate,
   });
 }
 
 export function useCreateFinanceCheckpoint() {
+  const src = useFinanceSource();
   const invalidate = useInvalidateFinance();
   return useMutation({
     mutationFn: (input: FinanceCheckpointInput) =>
-      apiFetch<FinanceCheckpoint>("/finance/checkpoints", {
+      src.send<FinanceCheckpoint>("/finance/checkpoints", {
         method: "POST",
         body: input,
       }),
@@ -157,10 +161,11 @@ export function useCreateFinanceCheckpoint() {
 }
 
 export function useDeleteFinanceCheckpoint() {
+  const src = useFinanceSource();
   const invalidate = useInvalidateFinance();
   return useMutation({
     mutationFn: (id: string) =>
-      apiFetch<void>(`/finance/checkpoints/${id}`, { method: "DELETE" }),
+      src.send<void>(`/finance/checkpoints/${id}`, { method: "DELETE" }),
     onSuccess: invalidate,
   });
 }

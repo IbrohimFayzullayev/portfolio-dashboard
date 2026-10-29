@@ -9,11 +9,16 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // The Telegram Mini App (/tg) has no admin session and must never ask for
-  // one: it signs in with Telegram instead (lib/telegram.tsx). Keeping the
-  // admin AuthProvider out of that tree means no /auth/me request, and no
-  // admin cookie sent, from inside Telegram.
-  const isTelegramApp = usePathname()?.startsWith("/tg") ?? false;
+  // The Telegram Mini Apps (/tg for the ops bot, /pul for the finance bot)
+  // have no admin session and must never ask for one: they sign in with
+  // Telegram instead (lib/telegram.tsx). Keeping the admin AuthProvider out
+  // of that tree means no /auth/me request, and no admin cookie sent, from
+  // inside Telegram.
+  const pathname = usePathname() ?? "";
+  const isTelegramApp =
+    pathname.startsWith("/tg") ||
+    pathname === "/pul" ||
+    pathname.startsWith("/pul/");
   const [queryClient] = React.useState(
     () =>
       new QueryClient({

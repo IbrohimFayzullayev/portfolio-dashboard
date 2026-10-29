@@ -9,11 +9,17 @@ import { API_URL, ApiError } from "@/lib/api";
 /**
  * The Telegram Mini App session.
  *
- * Telegram opens /tg with signed "init data" describing who opened it. The
- * page trades that for a read-only viewer token (POST /tg/auth) and keeps the
- * token in memory only: no cookie, no localStorage. Requests send it as a
- * Bearer header with `credentials: "omit"`, so the dashboard's admin cookie is
- * never attached here even if the same browser happens to have one.
+ * Telegram opens the page with signed "init data" describing who opened it.
+ * The page trades that for a short-lived token and keeps the token in memory
+ * only: no cookie, no localStorage. Requests send it as a Bearer header with
+ * `credentials: "omit"`, so the dashboard's admin cookie is never attached
+ * here even if the same browser happens to have one.
+ *
+ * Two Mini Apps use this, each against its own backend:
+ *
+ *   - /tg  - the portfolio's ops bot: API_URL + POST /tg/auth, read-only.
+ *   - /pul - the separate finance bot: its own API (FINBOT_API_URL) +
+ *            POST /auth, where the person may also edit their own entries.
  *
  * Init data stays valid for a day, the token for four hours; when the token
  * runs out mid-session the page simply signs in again with the same init data.
@@ -36,11 +42,19 @@ declare global {
 
 type Status = "loading" | "ready" | "outside" | "denied" | "error";
 
+export interface SendOptions {
+  method?: string;
+  body?: unknown;
+  signal?: AbortSignal;
+}
+
 interface TelegramSession {
   status: Status;
   error: string;
   firstName: string;
   get: <T>(path: string, signal?: AbortSignal) => Promise<T>;
+  /** Any method, with a JSON body. Only the finance bot's API accepts writes. */
+  send: <T>(path: string, options?: SendOptions) => Promise<T>;
   retry: () => void;
 }
 
@@ -63,11 +77,13 @@ interface AuthResponse {
   user: { id: number; first_name: string };
 }
 
-/** Exchanges init data for a viewer token. Exported for tests. */
+/** Exchanges init data for a token. Exported for tests. */
 export async function signInWithInitData(
   initData: string,
+  apiBase: string = API_URL,
+  authPath: string = "/tg/auth",
 ): Promise<AuthResponse> {
-  const res = await fetch(`${API_URL}/tg/auth`, {
+  const res = await fetch(`${apiBase}${authPath}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ init_data: initData }),
@@ -90,8 +106,14 @@ const TELEGRAM_SCRIPT = "https://telegram.org/js/telegram-web-app.js";
 
 export function TelegramSessionProvider({
   children,
+  apiBase = API_URL,
+  authPath = "/tg/auth",
 }: {
   children: React.ReactNode;
+  /** Base URL of the API this Mini App talks to. */
+  apiBase?: string;
+  /** Where init data is traded for a token, relative to apiBase. */
+  authPath?: string;
 }) {
   const { setTheme } = useTheme();
   const [status, setStatus] = React.useState<Status>("loading");
@@ -107,7 +129,7 @@ export function TelegramSessionProvider({
   const signIn = React.useCallback(async (): Promise<string> => {
     // One sign-in at a time, however many queries notice the token is gone.
     if (!pending.current) {
-      pending.current = signInWithInitData(initData.current)
+      pending.current = signInWithInitData(initData.current, apiBase, authPath)
         .then((res) => {
           token.current = {
             value: res.token,
@@ -121,7 +143,7 @@ export function TelegramSessionProvider({
         });
     }
     return pending.current;
-  }, []);
+  }, [apiBase, authPath]);
 
   // Telegram's script may already be cached and loaded before React runs.
   // The timer is only a backstop for a script that never answers at all;
@@ -163,11 +185,21 @@ export function TelegramSessionProvider({
     return () => tg.offEvent("themeChanged", syncTheme);
   }, [scriptReady, attempt, setTheme, signIn]);
 
-  const get = React.useCallback(
-    async <T,>(path: string, signal?: AbortSignal): Promise<T> => {
+  const send = React.useCallback(
+    async <T,>(
+      path: string,
+      { method = "GET", body, signal }: SendOptions = {},
+    ): Promise<T> => {
       const call = async (bearer: string) =>
-        fetch(`${API_URL}${path}`, {
-          headers: { Authorization: `Bearer ${bearer}` },
+        fetch(`${apiBase}${path}`, {
+          method,
+          headers: {
+            Authorization: `Bearer ${bearer}`,
+            ...(body !== undefined
+              ? { "Content-Type": "application/json" }
+              : {}),
+          },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
           credentials: "omit",
           signal,
         });
@@ -180,6 +212,7 @@ export function TelegramSessionProvider({
         token.current = null;
         res = await call(await signIn());
       }
+      if (res.status === 204) return undefined as T;
 
       const data = (await res.json().catch(() => null)) as {
         error?: string;
@@ -192,7 +225,13 @@ export function TelegramSessionProvider({
       }
       return data as T;
     },
-    [signIn],
+    [apiBase, signIn],
+  );
+
+  const get = React.useCallback(
+    <T,>(path: string, signal?: AbortSignal): Promise<T> =>
+      send<T>(path, { signal }),
+    [send],
   );
 
   const value = React.useMemo<TelegramSession>(
@@ -201,9 +240,10 @@ export function TelegramSessionProvider({
       error,
       firstName,
       get,
+      send,
       retry: () => setAttempt((n) => n + 1),
     }),
-    [status, error, firstName, get],
+    [status, error, firstName, get, send],
   );
 
   return (
