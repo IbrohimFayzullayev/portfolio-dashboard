@@ -11,7 +11,7 @@ import { FINBOT_API_URL, FINBOT_AUTH_PATH } from "@/lib/finbot";
  */
 
 export const metadata: Metadata = {
-  title: "Hisob-kitob",
+  title: "Hamyon",
   robots: { index: false, follow: false },
 };
 

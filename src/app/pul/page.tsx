@@ -77,7 +77,7 @@ export default function FinbotPage() {
     <FinanceSourceProvider source={source}>
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-4 pb-10">
         <h1 className="text-lg font-semibold tracking-tight">
-          Hisob-kitob
+          👛 Hamyon
           {session.firstName && (
             <span className="text-muted-foreground font-normal">
               {" "}
